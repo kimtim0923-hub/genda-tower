@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import {
   Globe, Zap, CheckCircle2, XCircle,
   Mail, Linkedin, Megaphone, MapPin,
   Users, Code2, BarChart3, Flag, TrendingUp,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, RefreshCw,
 } from "lucide-react";
 
 type TaskStatus = "todo" | "active" | "done" | "blocked";
@@ -19,6 +20,27 @@ interface GanttTask {
 interface Workstream {
   id: string; label: string; icon: React.ReactNode; color: WsKey; tasks: GanttTask[];
 }
+
+// DB row shape
+interface DbTask {
+  id: string; workstream_id: string; name: string;
+  start_date: string; end_date: string;
+  status: TaskStatus; priority: Priority; note: string | null;
+}
+interface DbKpi {
+  id: string; label: string; current_value: number;
+  target_value: number; unit: string; color: string;
+}
+
+const WS_META: {id:WsKey;label:string;icon:React.ReactNode}[] = [
+  {id:"landing",    label:"🚀 랜딩페이지 & 유효성 검증",     icon:<Globe size={12}/>},
+  {id:"acquisition",label:"📢 베타 모객 채널 (전방위 홍보)", icon:<Megaphone size={12}/>},
+  {id:"coldmail",   label:"📧 타겟 콜드메일 캠페인",         icon:<Mail size={12}/>},
+  {id:"linkedin",   label:"🔗 LinkedIn Build in Public",     icon:<Linkedin size={12}/>},
+  {id:"venuedb",    label:"🏢 베뉴 DB & 큐레이션 엔진",      icon:<MapPin size={12}/>},
+  {id:"influencer", label:"🎯 인플루언서 DB & 비용 산출",    icon:<Users size={12}/>},
+  {id:"mvp",        label:"⚙️ MVP 핵심 기능 개발",           icon:<Code2 size={12}/>},
+];
 
 const WS_COLORS: Record<WsKey,{hdr:string;row:string;bar:string}> = {
   landing:     {hdr:"#4f46e5",row:"#eef2ff",bar:"#818cf8"},
@@ -66,101 +88,119 @@ const MILESTONES=[
   {date:"2026-11-01",label:"BEP 100%",color:"#059669"},
 ];
 
-const INIT_WS: Workstream[] = [
-  { id:"landing",label:"🚀 랜딩페이지 & 유효성 검증",icon:<Globe size={12}/>,color:"landing",tasks:[
-    {id:"l1",name:"랜딩페이지 와이어프레임 설계",   start:"2026-03-06",end:"2026-03-10",status:"done",  priority:"critical"},
-    {id:"l2",name:"Next.js 랜딩페이지 개발",         start:"2026-03-10",end:"2026-03-22",status:"active",priority:"critical"},
-    {id:"l3",name:"베타 사전등록 폼 연동 (Supabase)", start:"2026-03-18",end:"2026-03-24",status:"todo", priority:"critical"},
-    {id:"l4",name:"OG 이미지 & SEO 메타 세팅",       start:"2026-03-22",end:"2026-03-25",status:"todo", priority:"high"},
-    {id:"l5",name:"웰컴 이메일 자동화 (n8n→Gmail)",   start:"2026-03-24",end:"2026-03-28",status:"todo", priority:"high"},
-    {id:"l6",name:"유효성 데이터 분석 (100→500→1000명)",start:"2026-03-28",end:"2026-06-30",status:"todo",priority:"critical"},
-  ]},
-  { id:"acquisition",label:"📢 베타 모객 채널 (전방위 홍보)",icon:<Megaphone size={12}/>,color:"acquisition",tasks:[
-    {id:"a1",name:"Betalist 등록",                    start:"2026-03-15",end:"2026-03-18",status:"todo",priority:"high"},
-    {id:"a2",name:"Product Hunt 론칭 준비",           start:"2026-03-15",end:"2026-04-05",status:"todo",priority:"critical",note:"Hunter 섭외 + 에셋 준비"},
-    {id:"a3",name:"Indie Hackers 포스팅",             start:"2026-03-20",end:"2026-03-23",status:"todo",priority:"high"},
-    {id:"a4",name:"Reddit (r/SideProject, r/entrepreneur)",start:"2026-03-20",end:"2026-03-25",status:"todo",priority:"medium"},
-    {id:"a5",name:"X(Twitter) 계정 세팅 & 첫 스레드",start:"2026-03-15",end:"2026-03-20",status:"todo",priority:"medium"},
-    {id:"a6",name:"JP/SEA 커뮤니티 타겟 포스팅",      start:"2026-03-25",end:"2026-04-10",status:"todo",priority:"high"},
-    {id:"a7",name:"Product Hunt 론칭 실행 🚀",        start:"2026-04-07",end:"2026-04-08",status:"todo",priority:"critical"},
-    {id:"a8",name:"ITB Asia 사전 네트워킹 리드 수집",  start:"2026-06-01",end:"2026-09-30",status:"todo",priority:"high"},
-  ]},
-  { id:"coldmail",label:"📧 타겟 콜드메일 캠페인",icon:<Mail size={12}/>,color:"coldmail",tasks:[
-    {id:"c1",name:"JP/SEA/US 리드 리스트 100건",      start:"2026-03-10",end:"2026-03-20",status:"todo",priority:"critical"},
-    {id:"c2",name:"Template A (스몰브랜드 오너)",      start:"2026-03-15",end:"2026-03-20",status:"todo",priority:"critical",note:"3-Step Hook 프레임워크"},
-    {id:"c3",name:"Template B (해외 에이전시)",        start:"2026-03-15",end:"2026-03-20",status:"todo",priority:"high"},
-    {id:"c4",name:"n8n 자동화 구축 (LLM 개인화)",     start:"2026-03-22",end:"2026-04-05",status:"todo",priority:"critical"},
-    {id:"c5",name:"1차 테스트 발송 10건 & 오픈율 확인",start:"2026-04-05",end:"2026-04-10",status:"todo",priority:"high"},
-    {id:"c6",name:"2차 발송 100건 + Hook 최적화",     start:"2026-04-10",end:"2026-04-25",status:"todo",priority:"high"},
-    {id:"c7",name:"대규모 발송 500건 + 리플라이 관리", start:"2026-05-01",end:"2026-05-31",status:"todo",priority:"high"},
-  ]},
-  { id:"linkedin",label:"🔗 LinkedIn Build in Public",icon:<Linkedin size={12}/>,color:"linkedin",tasks:[
-    {id:"li1",name:"LinkedIn 프로필 최적화 (PCO→SaaS Founder)",start:"2026-03-06",end:"2026-03-10",status:"done",priority:"critical"},
-    {id:"li2",name:"Post #1: The Pivot",                       start:"2026-03-10",end:"2026-03-11",status:"todo",priority:"high"},
-    {id:"li3",name:"Post #2: Tech Stack (n8n+FastAPI)",        start:"2026-03-17",end:"2026-03-18",status:"todo",priority:"medium"},
-    {id:"li4",name:"Post #3: Market Insight (서울 88% 쏠림)", start:"2026-03-24",end:"2026-03-25",status:"todo",priority:"medium"},
-    {id:"li5",name:"Post #4: Behind the Scenes",              start:"2026-03-31",end:"2026-04-01",status:"todo",priority:"medium"},
-    {id:"li6",name:"n8n Notion→LLM→LinkedIn 자동 배포",       start:"2026-03-20",end:"2026-04-05",status:"todo",priority:"high"},
-    {id:"li7",name:"주 1회 BIP 정기 포스팅 자동화 (4월~)",    start:"2026-04-06",end:"2026-08-31",status:"todo",priority:"medium"},
-  ]},
-  { id:"venuedb",label:"🏢 베뉴 DB & 큐레이션 엔진",icon:<MapPin size={12}/>,color:"venuedb",tasks:[
-    {id:"v1",name:"KTO/BTO 유니크베뉴 API 연동",      start:"2026-03-15",end:"2026-03-30",status:"todo",priority:"critical"},
-    {id:"v2",name:"Google Places API 연동",           start:"2026-03-20",end:"2026-04-05",status:"todo",priority:"high"},
-    {id:"v3",name:"부산 베뉴 수동 DB 파일럿 100개소", start:"2026-04-01",end:"2026-04-30",status:"todo",priority:"critical",note:"Sora 10년 실무 데이터"},
-    {id:"v4",name:"Hard Filter 로직 (예산/수용규모)", start:"2026-04-15",end:"2026-05-05",status:"todo",priority:"high"},
-    {id:"v5",name:"Soft Scoring (Vibe Match+Traffic)",start:"2026-04-25",end:"2026-05-20",status:"todo",priority:"high"},
-    {id:"v6",name:"전국 5,000개소 DB 확장",           start:"2026-07-01",end:"2026-08-31",status:"todo",priority:"high"},
-    {id:"v7",name:"지자체 스폰서드 노출 계약 연동",   start:"2026-09-01",end:"2026-09-30",status:"todo",priority:"medium"},
-  ]},
-  { id:"influencer",label:"🎯 인플루언서 DB & 비용 산출",icon:<Users size={12}/>,color:"influencer",tasks:[
-    {id:"in1",name:"Nano~Macro 티어별 후보 DB",         start:"2026-03-20",end:"2026-04-10",status:"todo",priority:"high",note:"Cbase × 1.15"},
-    {id:"in2",name:"Cbase 자동 계산 FastAPI 엔드포인트",start:"2026-04-05",end:"2026-04-20",status:"todo",priority:"high"},
-    {id:"in3",name:"참여율 가중치(Weng) 연동",          start:"2026-04-15",end:"2026-04-30",status:"todo",priority:"medium"},
-    {id:"in4",name:"해외 팔로워 비중(Wglobal) 연동",   start:"2026-04-20",end:"2026-05-05",status:"todo",priority:"medium"},
-    {id:"in5",name:"Launch 패키지 후보 3인 자동 추천 UI",start:"2026-05-10",end:"2026-06-10",status:"todo",priority:"high"},
-  ]},
-  { id:"mvp",label:"⚙️ MVP 핵심 기능 개발",icon:<Code2 size={12}/>,color:"mvp",tasks:[
-    {id:"m1",name:"베뉴 검색 & 필터 UI",              start:"2026-04-01",end:"2026-05-15",status:"todo",priority:"critical"},
-    {id:"m2",name:"즉시 견적 산출 'Aha Moment' 컴포넌트",start:"2026-04-10",end:"2026-04-30",status:"todo",priority:"critical",note:"Master.md 핵심 훅"},
-    {id:"m3",name:"인플루언서 매칭 UI",               start:"2026-04-20",end:"2026-05-31",status:"todo",priority:"critical"},
-    {id:"m4",name:"마케팅 에셋 AI 생성 (3-Step Chain)",start:"2026-05-01",end:"2026-06-15",status:"todo",priority:"high"},
-    {id:"m5",name:"크레딧 결제 Stripe ($99/$499/$1,500)",start:"2026-05-15",end:"2026-06-30",status:"todo",priority:"critical"},
-    {id:"m6",name:"팀 협업 보드 (해외↔현지 스태프)",  start:"2026-06-01",end:"2026-07-31",status:"todo",priority:"medium"},
-    {id:"m7",name:"Actionable Proposal 자동 생성",    start:"2026-06-15",end:"2026-07-31",status:"todo",priority:"critical",note:"1 크레딧 = 실행형 견적서"},
-  ]},
-];
-
-const INIT_KPIS=[
-  {id:"beta",  label:"베타 모객",   current:0,target:1000,unit:"명", color:"#4f46e5"},
-  {id:"cr",    label:"전환율",      current:0,target:15,  unit:"%",  color:"#db2777"},
-  {id:"open",  label:"메일 오픈율", current:0,target:40,  unit:"%",  color:"#2563eb"},
-  {id:"credit",label:"크레딧 판매", current:0,target:6,   unit:"건", color:"#d97706"},
-];
+// Convert DB rows → Workstream[]
+function buildWorkstreams(rows: DbTask[]): Workstream[] {
+  return WS_META.map(meta => ({
+    id: meta.id,
+    label: meta.label,
+    icon: meta.icon,
+    color: meta.id,
+    tasks: rows
+      .filter(r => r.workstream_id === meta.id)
+      .map(r => ({
+        id: r.id,
+        name: r.name,
+        start: r.start_date,
+        end: r.end_date,
+        status: r.status,
+        priority: r.priority,
+        note: r.note ?? undefined,
+      })),
+  }));
+}
 
 export default function GanttTower() {
-  const [ws, setWs]       = useState(INIT_WS);
-  const [open, setOpen]   = useState<Record<string,boolean>>(Object.fromEntries(INIT_WS.map(w=>[w.id,true])));
-  const [kpis, setKpis]   = useState(INIT_KPIS);
+  const [ws, setWs] = useState<Workstream[]>([]);
+  const [open, setOpen] = useState<Record<string,boolean>>(Object.fromEntries(WS_META.map(w=>[w.id,true])));
+  const [kpis, setKpis] = useState<{id:string;label:string;current:number;target:number;unit:string;color:string}[]>([]);
   const [editK, setEditK] = useState<string|null>(null);
   const [kInp, setKInp]   = useState("");
-  const todayX = toX(todayStr);
+  const [loading, setLoading] = useState(true);
+  const [synced, setSynced] = useState<string>("");
 
-  const cycleStatus=(wsId:string,taskId:string)=>setWs(prev=>prev.map(w=>{
-    if(w.id!==wsId)return w;
-    return{...w,tasks:w.tasks.map(t=>{
-      if(t.id!==taskId)return t;
-      return{...t,status:STATUS_CYCLE[(STATUS_CYCLE.indexOf(t.status)+1)%STATUS_CYCLE.length]};
-    })};
-  }));
+  // ─── Fetch from Supabase ─────────────────────────
+  const fetchAll = useCallback(async () => {
+    const [{ data: taskRows }, { data: kpiRows }] = await Promise.all([
+      supabase.from("tasks").select("*").order("id"),
+      supabase.from("kpis").select("*").order("id"),
+    ]);
+    if (taskRows) setWs(buildWorkstreams(taskRows as DbTask[]));
+    if (kpiRows) setKpis((kpiRows as DbKpi[]).map(k => ({
+      id: k.id, label: k.label, current: Number(k.current_value),
+      target: Number(k.target_value), unit: k.unit, color: k.color,
+    })));
+    setLoading(false);
+    setSynced(new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}));
+  }, []);
 
-  const saveKpi=(id:string)=>{
-    const v=parseInt(kInp);if(!isNaN(v))setKpis(p=>p.map(k=>k.id===id?{...k,current:v}:k));
-    setEditK(null);setKInp("");
+  // ─── Initial load + Realtime subscription ────────
+  useEffect(() => {
+    fetchAll();
+
+    const taskSub = supabase
+      .channel("tasks-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
+        fetchAll();
+      })
+      .subscribe();
+
+    const kpiSub = supabase
+      .channel("kpis-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "kpis" }, () => {
+        fetchAll();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(taskSub);
+      supabase.removeChannel(kpiSub);
+    };
+  }, [fetchAll]);
+
+  // ─── Cycle task status → write to Supabase ───────
+  const cycleStatus = async (wsId: string, taskId: string) => {
+    // Find current status
+    const task = ws.find(w=>w.id===wsId)?.tasks.find(t=>t.id===taskId);
+    if (!task) return;
+    const newStatus = STATUS_CYCLE[(STATUS_CYCLE.indexOf(task.status)+1)%STATUS_CYCLE.length];
+
+    // Optimistic update
+    setWs(prev=>prev.map(w=>{
+      if(w.id!==wsId)return w;
+      return{...w,tasks:w.tasks.map(t=>{
+        if(t.id!==taskId)return t;
+        return{...t,status:newStatus};
+      })};
+    }));
+
+    // Persist to Supabase
+    await supabase.from("tasks").update({ status: newStatus, updated_at: new Date().toISOString() }).eq("id", taskId);
   };
 
-  const allT=ws.flatMap(w=>w.tasks);
-  const doneN=allT.filter(t=>t.status==="done").length;
-  const actN=allT.filter(t=>t.status==="active").length;
+  // ─── Save KPI → write to Supabase ────────────────
+  const saveKpi = async (id: string) => {
+    const v = parseInt(kInp);
+    if (!isNaN(v)) {
+      setKpis(p=>p.map(k=>k.id===id?{...k,current:v}:k));
+      await supabase.from("kpis").update({ current_value: v, updated_at: new Date().toISOString() }).eq("id", id);
+    }
+    setEditK(null); setKInp("");
+  };
+
+  const todayX = toX(todayStr);
+  const allT = ws.flatMap(w=>w.tasks);
+  const doneN = allT.filter(t=>t.status==="done").length;
+  const actN  = allT.filter(t=>t.status==="active").length;
+
+  if (loading) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f8fafc",fontFamily:"-apple-system,sans-serif"}}>
+      <div style={{textAlign:"center"}}>
+        <RefreshCw size={24} style={{animation:"spin 1s linear infinite",color:"#4f46e5"}}/>
+        <div style={{marginTop:8,fontSize:12,color:"#64748b"}}>Supabase에서 데이터 로딩 중...</div>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{minHeight:"100vh",background:"#f8fafc",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",fontSize:13}}>
@@ -201,7 +241,12 @@ export default function GanttTower() {
           </div>
 
           <div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{fontSize:9,color:"#94a3b8"}}>{todayStr}</div>
+            <div style={{fontSize:9,color:"#94a3b8",display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
+              <span style={{width:5,height:5,borderRadius:"50%",background:"#10b981",display:"inline-block"}}/>
+              <span>LIVE</span>
+              <span style={{color:"#cbd5e1"}}>·</span>
+              <span>{synced}</span>
+            </div>
             <div style={{fontSize:10,fontWeight:700,color:"#4f46e5"}}>완료 {doneN} · 진행 {actN} / {allT.length}</div>
           </div>
         </div>
@@ -227,7 +272,7 @@ export default function GanttTower() {
               <span style={{fontSize:9,color:"#94a3b8"}}>{p}</span>
             </div>
           ))}
-          <span style={{fontSize:9,color:"#cbd5e1",marginLeft:"auto"}}>● 클릭 → 상태 변경 | KPI 숫자 클릭 → 수정</span>
+          <span style={{fontSize:9,color:"#cbd5e1",marginLeft:"auto"}}>● 클릭 → 상태 변경 | KPI 숫자 클릭 → 수정 | Supabase Realtime 연동</span>
         </div>
 
         {/* 타임라인 헤더 */}
@@ -258,7 +303,7 @@ export default function GanttTower() {
                 </div>
                 <div style={{flex:1,position:"relative",height:4}}>
                   <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,.15)",borderRadius:2}}/>
-                  <div style={{position:"absolute",top:0,bottom:0,left:0,background:"rgba(255,255,255,.45)",borderRadius:2,width:(dCnt/w.tasks.length*100)+"%",transition:"width .4s"}}/>
+                  <div style={{position:"absolute",top:0,bottom:0,left:0,background:"rgba(255,255,255,.45)",borderRadius:2,width:(w.tasks.length?dCnt/w.tasks.length*100:0)+"%",transition:"width .4s"}}/>
                   <div style={{position:"absolute",left:todayX+"%",top:-3,bottom:-3,width:1,background:"rgba(255,255,255,.4)"}}/>
                 </div>
                 <div style={{width:58,flexShrink:0,textAlign:"right",fontSize:9,opacity:.8}}>{dCnt}/{w.tasks.length}</div>
@@ -318,7 +363,7 @@ export default function GanttTower() {
             {label:"전체 태스크",val:allT.length+"건",color:"#475569",icon:<BarChart3 size={13}/>},
             {label:"진행 중",    val:actN+"건",       color:"#2563eb",icon:<Zap size={13}/>},
             {label:"완료",       val:doneN+"건",      color:"#059669",icon:<CheckCircle2 size={13}/>},
-            {label:"달성률",     val:Math.round(doneN/allT.length*100)+"%",color:"#4f46e5",icon:<TrendingUp size={13}/>},
+            {label:"달성률",     val:(allT.length?Math.round(doneN/allT.length*100):0)+"%",color:"#4f46e5",icon:<TrendingUp size={13}/>},
           ].map(s=>(
             <div key={s.label} style={{background:"#fff",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10}}>
               <span style={{color:s.color}}>{s.icon}</span>
@@ -350,7 +395,7 @@ export default function GanttTower() {
         </div>
 
         <div style={{textAlign:"center",fontSize:9,color:"#cbd5e1",marginTop:12,paddingBottom:16}}>
-          Gen-da Control Tower · Sora (10Y PCO) · 1,000 Beta Goal
+          Gen-da Control Tower · Sora (10Y PCO) · 1,000 Beta Goal · Supabase Realtime 🟢
         </div>
       </main>
     </div>

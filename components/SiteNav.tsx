@@ -59,6 +59,17 @@ export default function SiteNav() {
           }}>
             🗂 관제탑
           </Link>
+
+          <Link href="/report" style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "6px 14px", borderRadius: 8,
+            fontSize: 13, fontWeight: 600, textDecoration: "none",
+            background: path === "/report" ? "#e11d48" : "#f1f5f9",
+            color:      path === "/report" ? "#fff"    : "#475569",
+            border: "none", transition: "all .15s",
+          }}>
+            📰 리포트
+          </Link>
         </div>
 
         {/* 베타 CTA */}

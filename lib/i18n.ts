@@ -21,6 +21,7 @@ export interface Translation {
   nav: {
     features: string;
     pricing: string;
+    report: string;
     about: string;
     cta: string;
   };
@@ -101,6 +102,16 @@ export interface Translation {
     privacy: string;
     counter: string;
   };
+  weeklyReport: {
+    tag: string;
+    headline: string;
+    subheadline: string;
+    thisWeek: string;
+    popups: { brand: string; category: string; location: string; scale: string; takeaway: string }[];
+    discoveryCta: string;
+    discoveryDesc: string;
+    sampleLabel: string;
+  };
   footer: {
     tagline: string;
     links: { label: string; href: string }[];
@@ -117,6 +128,7 @@ const ko: Translation = {
   nav: {
     features: "기능",
     pricing: "요금제",
+    report: "리포트",
     about: "소개",
     cta: "베타 신청",
   },
@@ -245,6 +257,20 @@ const ko: Translation = {
     privacy: "스팸 없음. 언제든 구독 해지 가능.",
     counter: "명이 이미 신청했습니다",
   },
+  weeklyReport: {
+    tag: "K-Popup Intelligence",
+    headline: "이번 주 서울 팝업 트렌드",
+    subheadline: "매주 성수동·서울 팝업을 분석해 글로벌 마케터에게 실행 가능한 인사이트를 제공합니다",
+    thisWeek: "2026년 3월 1주차 — 7건 분석 완료",
+    popups: [
+      { brand: "NikeSKIMS", category: "Sports × Fashion", location: "SCENE 성수", scale: "XL", takeaway: "글로벌 메가 브랜드가 성수동을 Tier-1 론칭 도시로 선택" },
+      { brand: "BLACKPINK DEADLINE", category: "Entertainment", location: "무신사 성수", scale: "L", takeaway: "가챠머신 + 스탬프 랠리로 팬덤→커머스 전환" },
+      { brand: "Samsung Galaxy S26", category: "Tech", location: "T Factory 성수", scale: "XL", takeaway: "N번째 방문객 전략으로 일일 FOMO 엔진 구축" },
+    ],
+    discoveryCta: "이번 주 리포트 맛보기 →",
+    discoveryDesc: "매주 트렌드한 한국 팝업 심층 분석 + 스몰 브랜드 플레이북 포함",
+    sampleLabel: "이번 주 하이라이트",
+  },
   footer: {
     tagline: "한국 팝업의 새로운 기준, Gen-da",
     links: [
@@ -265,6 +291,7 @@ const en: Translation = {
   nav: {
     features: "Features",
     pricing: "Pricing",
+    report: "Report",
     about: "About",
     cta: "Join Beta",
   },
@@ -393,6 +420,20 @@ const en: Translation = {
     privacy: "No spam. Unsubscribe anytime.",
     counter: "people have already joined",
   },
+  weeklyReport: {
+    tag: "K-Popup Intelligence",
+    headline: "This Week's Seoul Popup Trends",
+    subheadline: "Every week we analyze Seongsu & Seoul popups and deliver actionable insights for global marketers",
+    thisWeek: "March 2026, Week 1 — 7 popups analyzed",
+    popups: [
+      { brand: "NikeSKIMS", category: "Sports × Fashion", location: "SCENE Seongsu", scale: "XL", takeaway: "Global mega-brand picks Seongsu as Tier-1 launch city" },
+      { brand: "BLACKPINK DEADLINE", category: "Entertainment", location: "Musinsa Seongsu", scale: "L", takeaway: "Gacha + stamp rally converts fandom into commerce" },
+      { brand: "Samsung Galaxy S26", category: "Tech", location: "T Factory Seongsu", scale: "XL", takeaway: "Numbered-visitor strategy builds daily FOMO engine" },
+    ],
+    discoveryCta: "Preview this week's report →",
+    discoveryDesc: "Weekly trending K-popup deep analysis + small brand playbook included",
+    sampleLabel: "This Week's Highlights",
+  },
   footer: {
     tagline: "The new standard for K-Popups — Gen-da",
     links: [
@@ -413,6 +454,7 @@ const de: Translation = {
   nav: {
     features: "Funktionen",
     pricing: "Preise",
+    report: "Bericht",
     about: "Über uns",
     cta: "Beta beitreten",
   },
@@ -541,6 +583,20 @@ const de: Translation = {
     privacy: "Kein Spam. Jederzeit abmeldbar.",
     counter: "Personen haben sich bereits angemeldet",
   },
+  weeklyReport: {
+    tag: "K-Popup Intelligence",
+    headline: "Seoul Popup-Trends dieser Woche",
+    subheadline: "Jede Woche analysieren wir Seongsu & Seoul Popups und liefern umsetzbare Insights für globale Marketer",
+    thisWeek: "März 2026, Woche 1 — 7 Popups analysiert",
+    popups: [
+      { brand: "NikeSKIMS", category: "Sports × Fashion", location: "SCENE Seongsu", scale: "XL", takeaway: "Globale Mega-Marke wählt Seongsu als Tier-1-Launchstadt" },
+      { brand: "BLACKPINK DEADLINE", category: "Entertainment", location: "Musinsa Seongsu", scale: "L", takeaway: "Gacha + Stempel-Rallye wandelt Fandom in Commerce um" },
+      { brand: "Samsung Galaxy S26", category: "Tech", location: "T Factory Seongsu", scale: "XL", takeaway: "Besucher-Nummern-Strategie als tägliche FOMO-Engine" },
+    ],
+    discoveryCta: "Wochenbericht Vorschau ansehen →",
+    discoveryDesc: "Wöchentlich trendige K-Popup Tiefenanalysen + Small Brand Playbook inklusive",
+    sampleLabel: "Highlights dieser Woche",
+  },
   footer: {
     tagline: "Der neue Standard für K-Popups — Gen-da",
     links: [
@@ -561,6 +617,7 @@ const es: Translation = {
   nav: {
     features: "Funciones",
     pricing: "Precios",
+    report: "Informe",
     about: "Nosotros",
     cta: "Unirse al Beta",
   },
@@ -688,6 +745,20 @@ const es: Translation = {
     success: "🎉 ¡Ya estás dentro! Te avisaremos cuando lance el beta.",
     privacy: "Sin spam. Cancela cuando quieras.",
     counter: "personas ya se han registrado",
+  },
+  weeklyReport: {
+    tag: "K-Popup Intelligence",
+    headline: "Tendencias de Popups en Seúl esta semana",
+    subheadline: "Cada semana analizamos los popups de Seongsu y Seúl para entregar insights accionables a marketers globales",
+    thisWeek: "Marzo 2026, Semana 1 — 7 popups analizados",
+    popups: [
+      { brand: "NikeSKIMS", category: "Sports × Fashion", location: "SCENE Seongsu", scale: "XL", takeaway: "Mega-marca global elige Seongsu como ciudad de lanzamiento Tier-1" },
+      { brand: "BLACKPINK DEADLINE", category: "Entertainment", location: "Musinsa Seongsu", scale: "L", takeaway: "Gacha + rally de sellos convierte fandom en comercio" },
+      { brand: "Samsung Galaxy S26", category: "Tech", location: "T Factory Seongsu", scale: "XL", takeaway: "Estrategia de visitante numerado como motor diario de FOMO" },
+    ],
+    discoveryCta: "Vista previa del informe semanal →",
+    discoveryDesc: "Análisis profundos semanales de K-popups de tendencia + playbook para marcas pequeñas incluido",
+    sampleLabel: "Destacados de esta semana",
   },
   footer: {
     tagline: "El nuevo estándar para K-Popups — Gen-da",

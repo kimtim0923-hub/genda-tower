@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { translations, LOCALES, type Locale, type Translation } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase";
 
 // ─── 색상 토큰 ────────────────────────────────────────────────────
 const C = {
@@ -97,8 +98,8 @@ function Navbar({ t, locale, setLocale }: { t: Translation; locale: Locale; setL
 
         {/* 데스크톱 메뉴 */}
         <div style={{ display:"flex", alignItems:"center", gap:28 }}>
-          {[t.nav.features, t.nav.pricing, t.nav.about].map((item, i) => (
-            <a key={i} href={["#features","#pricing","#about"][i]}
+          {[t.nav.features, t.nav.pricing, t.nav.report, t.nav.about].map((item, i) => (
+            <a key={i} href={["#features","#pricing","#report","#about"][i]}
               style={{ fontSize:14, color:C.gray600, textDecoration:"none", fontWeight:500 }}
               onMouseEnter={e=>(e.currentTarget.style.color=C.primary)}
               onMouseLeave={e=>(e.currentTarget.style.color=C.gray600)}
@@ -453,6 +454,83 @@ function AhaMoment({ t }: { t: Translation }) {
   );
 }
 
+// ─── Weekly Report Preview (리드 전환 → 맛보기 → Discovery $99) ───
+function WeeklyReportPreview({ t }: { t: Translation }) {
+  const w = t.weeklyReport;
+  const scaleColor: Record<string,string> = { XL:"#e11d48", L:"#f43f5e", M:"#fb7185", S:"#fda4af" };
+
+  return (
+    <SectionWrap bg="linear-gradient(160deg, #fff1f2 0%, #fce7f3 50%, #fdf2f8 100%)" id="report">
+      <div style={{ textAlign:"center", marginBottom:40 }}>
+        <span style={{
+          display:"inline-block", background:"rgba(225,29,72,.1)", color:"#e11d48",
+          fontSize:11, fontWeight:700, letterSpacing:".06em", textTransform:"uppercase",
+          padding:"4px 14px", borderRadius:99, marginBottom:14,
+        }}>{w.tag}</span>
+        <h2 style={{ fontSize:"clamp(24px,3.5vw,38px)", fontWeight:900, color:C.gray900, marginBottom:10 }}>
+          {w.headline}
+        </h2>
+        <p style={{ fontSize:15, color:C.gray600, maxWidth:560, margin:"0 auto" }}>
+          {w.subheadline}
+        </p>
+        <p style={{ fontSize:12, color:C.gray400, marginTop:10 }}>
+          {w.thisWeek}
+        </p>
+      </div>
+
+      {/* 팝업 카드 3장 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:16, marginBottom:32 }}>
+        {w.popups.map((p, i) => (
+          <div key={i} style={{
+            background:"rgba(255,255,255,.85)", borderRadius:14, padding:"22px 20px",
+            border:"1px solid rgba(225,29,72,.12)", backdropFilter:"blur(8px)",
+            boxShadow:"0 2px 12px rgba(225,29,72,.06)",
+            transition:"transform .15s, border-color .15s, box-shadow .15s",
+          }}
+            onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor="rgba(225,29,72,.3)"; e.currentTarget.style.boxShadow="0 8px 24px rgba(225,29,72,.12)"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor="rgba(225,29,72,.12)"; e.currentTarget.style.boxShadow="0 2px 12px rgba(225,29,72,.06)"; }}
+          >
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+              <span style={{ fontSize:15, fontWeight:800, color:C.gray900 }}>{p.brand}</span>
+              <span style={{
+                fontSize:9, fontWeight:800, color:C.white, letterSpacing:".05em",
+                background: scaleColor[p.scale] || "#e11d48", padding:"2px 8px", borderRadius:99,
+              }}>{p.scale}</span>
+            </div>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:10 }}>
+              <span style={{ fontSize:10, color:"#e11d48", background:"rgba(225,29,72,.08)", padding:"2px 8px", borderRadius:99 }}>{p.category}</span>
+              <span style={{ fontSize:10, color:C.gray600, background:"rgba(0,0,0,.04)", padding:"2px 8px", borderRadius:99 }}>{p.location}</span>
+            </div>
+            <p style={{ fontSize:12, color:C.gray600, lineHeight:1.6 }}>{p.takeaway}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 리포트 맛보기 CTA */}
+      <div style={{
+        background:C.white, borderRadius:16, padding:"28px 32px",
+        border:"1px solid rgba(225,29,72,.15)", textAlign:"center",
+        boxShadow:"0 4px 20px rgba(225,29,72,.08)",
+      }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:10 }}>
+          <span style={{ fontSize:28, fontWeight:900, color:"#e11d48" }}>$99</span>
+          <span style={{ fontSize:14, color:C.gray400 }}>/ mo</span>
+        </div>
+        <p style={{ fontSize:13, color:C.gray600, marginBottom:16 }}>{w.discoveryDesc}</p>
+        <a href="/report" style={{
+          display:"inline-block", background:"linear-gradient(135deg,#e11d48,#f43f5e)",
+          color:C.white, padding:"12px 32px", borderRadius:10,
+          fontSize:14, fontWeight:700, textDecoration:"none",
+          boxShadow:"0 4px 20px rgba(225,29,72,.3)", transition:"transform .15s",
+        }}
+          onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
+          onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}
+        >{w.discoveryCta}</a>
+      </div>
+    </SectionWrap>
+  );
+}
+
 // ─── Pricing ──────────────────────────────────────────────────────
 function PricingSection({ t }: { t: Translation }) {
   return (
@@ -541,17 +619,21 @@ function PricingSection({ t }: { t: Translation }) {
 }
 
 // ─── Beta Form ────────────────────────────────────────────────────
-function BetaFormSection({ t }: { t: Translation }) {
+function BetaFormSection({ t, locale }: { t: Translation; locale: Locale }) {
   const [name,    setName]    = useState("");
   const [email,   setEmail]   = useState("");
   const [company, setCompany] = useState("");
   const [done,    setDone]    = useState(false);
   const [count]               = useState(47); // 실제 Supabase 연동 시 실시간 카운트
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    // TODO: Supabase / n8n webhook 연동
+    try {
+      await supabase.from("beta_signups").insert({ name, email, company, locale });
+    } catch (err) {
+      console.error("supabase error:", err);
+    }
     setDone(true);
   };
 
@@ -675,8 +757,9 @@ export default function LandingPage() {
       <PainSection t={t} />
       <FeaturesSection t={t} />
       <AhaMoment t={t} />
+      <WeeklyReportPreview t={t} />
       <PricingSection t={t} />
-      <BetaFormSection t={t} />
+      <BetaFormSection t={t} locale={locale} />
       <Footer t={t} />
     </div>
   );
